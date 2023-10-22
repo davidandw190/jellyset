@@ -58,3 +58,41 @@ func (s set) has(items ...interface{}) bool {
 
 	return exist
 }
+
+// Copy creates a copy of the set and returns it.
+func (s set) copy() set {
+	copy := newSet()
+	for item := range s {
+		copy.add(item)
+	}
+	return copy
+}
+
+// List returns all items in the set as a slice.
+func (s set) list() []interface{} {
+	list := make([]interface{}, 0, len(s))
+
+	for item := range s {
+		list = append(list, item)
+	}
+
+	return list
+}
+
+// Foreach iterates over the items in the set and calls the provided function for each set member.
+// The iteration continues until all items in the set have been visited or the closure returns false.
+func (s set) foreach(callback func(item interface{}) bool) {
+	for item := range s {
+		if callback(item) {
+			break
+		}
+	}
+}
+
+// Merge merges the current set with another set.
+func (s set) merge(t set) {
+	t.foreach(func(item interface{}) bool {
+		s.add(item)
+		return true
+	})
+}
