@@ -11,13 +11,13 @@ type Set struct {
 	records map[string]set
 }
 
-// NewSet creates and returns a new empty set.
+// newSet creates and returns a new empty set.
 func newSet() set {
 	return make(map[interface{}]struct{})
 }
 
-// Add adds one or more items to the set.
-// If no items are provided, it has no effect.
+// add adds one or more items to the set.
+// if no items are provided, it has no effect.
 func (s set) add(items ...interface{}) {
 	if len(items) == 0 {
 		return
@@ -28,8 +28,8 @@ func (s set) add(items ...interface{}) {
 	}
 }
 
-// Remove removes one or more items from the set.
-// If passed nothing, it has no effect.
+// remove removes one or more items from the set.
+// if passed nothing, it has no effect.
 func (s set) remove(items ...interface{}) {
 	if len(items) == 0 {
 		return
@@ -40,10 +40,10 @@ func (s set) remove(items ...interface{}) {
 	}
 }
 
-// Has looks for the existence of items passed.
-// For multiple items, it returns true only if all of the items exist.
+// has looks for the existence of items passed.
+// for multiple items, it returns true only if all of the items exist.
 //
-// It returns false if nothing is passed.
+// it returns false if nothing is passed.
 func (s set) has(items ...interface{}) bool {
 	if len(items) == 0 {
 		return false
@@ -59,7 +59,7 @@ func (s set) has(items ...interface{}) bool {
 	return exist
 }
 
-// Copy creates a copy of the set and returns it.
+// copy creates a copy of the set and returns it.
 func (s set) copy() set {
 	copy := newSet()
 	for item := range s {
@@ -68,7 +68,7 @@ func (s set) copy() set {
 	return copy
 }
 
-// List returns all items in the set as a slice.
+// list returns all items in the set as a slice.
 func (s set) list() []interface{} {
 	list := make([]interface{}, 0, len(s))
 
@@ -79,8 +79,8 @@ func (s set) list() []interface{} {
 	return list
 }
 
-// Foreach iterates over the items in the set and calls the provided function for each set member.
-// The iteration continues until all items in the set have been visited or the closure returns false.
+// foreach iterates over the items in the set and calls the provided function for each set member.
+// the iteration continues until all items in the set have been visited or the closure returns false.
 func (s set) foreach(callback func(item interface{}) bool) {
 	for item := range s {
 		if callback(item) {
@@ -89,10 +89,44 @@ func (s set) foreach(callback func(item interface{}) bool) {
 	}
 }
 
-// Merge merges the current set with another set.
+// merge merges the current set with another set.
+// It is basically the implementation of the set union between 2 sets.
 func (s set) merge(t set) {
-	t.foreach(func(item interface{}) bool {
-		s.add(item)
-		return true
-	})
+	for item := range t {
+		s[item] = keyExists
+	}
+}
+
+// separate removes the set items containing in t from set s.
+// Does not undo merge!!
+func (s set) separate(t set) {
+	s.remove(t.list()...)
+}
+
+// size just returns the size of the s set
+func (s set) size() int {
+	return len(s)
+}
+
+// union returns a new set that is the union of multiple sets. It combines all elements
+// present in all the sets provided as arguments.
+func union(sets ...set) set {
+	if len(sets) == 0 {
+		return newSet()
+	}
+
+	totalSize := 0
+	for _, s := range sets {
+		totalSize += len(s)
+	}
+
+	unionSet := make(set, totalSize)
+
+	for _, s := range sets {
+		for item := range s {
+			unionSet[item] = keyExists
+		}
+	}
+
+	return unionSet
 }
