@@ -130,3 +130,72 @@ func union(sets ...set) set {
 
 	return unionSet
 }
+
+// difference returns a new set that contains items which are in the first set but not in the others.
+// It precomputes the size of the resulting set based on the number of elements in the input sets.
+func difference(sets ...set) set {
+	if len(sets) == 0 {
+		return newSet()
+	}
+
+	totalSize := len(sets[0])
+
+	for i := 1; i < len(sets); i++ {
+		totalSize -= len(sets[i])
+	}
+
+	if totalSize < 0 {
+		totalSize = 0
+	}
+
+	resultSet := make(set, totalSize)
+
+	for item := range sets[0] {
+		resultSet[item] = keyExists
+	}
+
+	for i := 1; i < len(sets); i++ {
+		for item := range sets[i] {
+			delete(resultSet, item)
+		}
+	}
+
+	return resultSet
+}
+
+// intersection returns a new set that contains items present in all given sets.
+// It precomputes the size of the resulting set based on the size of the smallest input set.
+func intersection(sets ...set) set {
+	if len(sets) == 0 {
+		return newSet()
+	}
+
+	minSize := len(sets[0])
+
+	for i := 1; i < len(sets); i++ {
+		if len(sets[i]) < minSize {
+			minSize = len(sets[i])
+		}
+	}
+
+	resultSet := make(set, minSize)
+
+	for item := range sets[0] {
+		if isPresentInAll(sets[1:], item) {
+			resultSet[item] = keyExists
+		}
+	}
+
+	return resultSet
+}
+
+// isPresentInAll checks if an item is present in all given sets.
+func isPresentInAll(sets []set, item interface{}) bool {
+	for _, s := range sets {
+		if _, exists := s[item]; !exists {
+			return false
+		}
+	}
+
+	return true
+}
