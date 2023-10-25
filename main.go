@@ -22,7 +22,7 @@ func New() *Set {
 // that were successfully added to the set.
 //
 // Parameters:
-//   - key: The key associated with the set.
+//   - key: 	The key associated with the set.
 //   - members: One or more members to be added to the set.
 //
 // Returns:
@@ -56,8 +56,8 @@ func (s *Set) SAdd(key string, members ...interface{}) int {
 // If the key does not exist or the count is less than or equal to 0, it returns an empty slice.
 //
 // Parameters:
-//   - key: The key associated with the set.
-//   - count: The number of random members to pop from the set. If count is 0 or negative, no members are popped.
+//   - key: 	The key associated with the set.
+//   - count: 	The number of random members to pop from the set. If count is 0 or negative, no members are popped.
 //
 // Returns:
 //   - A slice containing the popped members. If the set is empty or the count is zero, an empty slice is returned.
@@ -89,6 +89,82 @@ func (s *Set) SPop(key string, count int) []interface{} {
 	}
 
 	return members
+}
+
+// SRandMember returns one or more random members from the set associated with the given key.
+// If the key does not exist or the count is less than 1, it returns an empty slice.
+//
+// Parameters:
+//   - key: 	The key associated with the set.
+//   - count: 	The number of random members to retrieve from the set. If count is less than 1, no members are retrieved.
+//
+// Returns:
+//   - A slice containing the random members. If the set is empty or the count is less than 1, an empty slice is returned.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+//	randomMembers := set.SRandMember("myset", 3)
+//
+// In this example, three random members are retrieved from the set "myset," and they are stored in the 'randomMembers' slice.
+func (s *Set) SRandMember(key string, count int) []interface{} {
+	if !s.exists(key) || count < 1 {
+		return []interface{}{}
+	}
+
+	set := s.records[key]
+	members := make([]interface{}, count)
+
+	if count > 0 {
+		i := 0
+		for k := range set {
+			members[i] = k
+			i++
+
+			if i == count {
+				break
+			}
+		}
+	} else {
+		count = -count
+		for i := 0; i < count; i++ {
+			randomVal := randomElement(set)
+			if randomVal == nil {
+				break
+			}
+			members[i] = randomVal
+		}
+	}
+	return members
+}
+
+// SIsMember checks if the specified member exists in the set associated with the given key.
+// If the key does not exist, it returns false.
+//
+// Parameters:
+//   - key: 	The key associated with the set.
+//   - member: 	The member to check for existence in the set.
+//
+// Returns:
+//   - true if the member exists in the set, false otherwise.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("myset", "member1", "member2", "member3")
+//	exists := set.SIsMember("myset", "member2")
+//
+// In this example, it checks if "member2" exists in the set "myset," and 'exists' will be true.
+func (s *Set) SIsMember(key string, member interface{}) bool {
+	if !s.exists(key) {
+		return false
+	}
+
+	set := s.records[key]
+	_, exists := set[member]
+
+	return exists
 }
 
 // newSet creates and returns a new empty set.
@@ -265,7 +341,6 @@ func intersection(sets ...set) set {
 			resultSet[item] = keyExists
 		}
 	}
-
 	return resultSet
 }
 
@@ -284,4 +359,12 @@ func isPresentInAll(sets []set, item interface{}) bool {
 func (s *Set) exists(key string) bool {
 	_, exist := s.records[key]
 	return exist
+}
+
+// randomElement returns a random element from the set.
+func randomElement(set set) interface{} {
+	for k := range set {
+		return k
+	}
+	return nil
 }
