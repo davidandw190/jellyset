@@ -11,6 +11,86 @@ type Set struct {
 	records map[string]set
 }
 
+func New() *Set {
+	return &Set{
+		records: make(map[string]set),
+	}
+}
+
+// SAdd adds one or more members to the set associated with the provided key. If the key does not exist,
+// it creates a new set and adds the specified members to it. This function returns the number of elements
+// that were successfully added to the set.
+//
+// Parameters:
+//   - key: The key associated with the set.
+//   - members: One or more members to be added to the set.
+//
+// Returns:
+//   - The number of elements added to the set.
+//
+// Example:
+//   set := New()
+//   count := set.SAdd("myset", "member1", "member2", "member3")
+//
+// In this example, three members are added to the set "myset," and the function returns the count of elements added.
+
+func (s *Set) SAdd(key string, members ...interface{}) int {
+	if !s.exists(key) {
+		s.records[key] = make(set)
+	}
+
+	added := 0
+	set := s.records[key]
+
+	for _, member := range members {
+		if _, exists := set[member]; !exists {
+			set[member] = keyExists
+			added++
+		}
+	}
+
+	return added
+}
+
+// SPop removes and returns one or more random members from the set associated with the given key.
+// If the key does not exist or the count is less than or equal to 0, it returns an empty slice.
+//
+// Parameters:
+//   - key: The key associated with the set.
+//   - count: The number of random members to pop from the set. If count is 0 or negative, no members are popped.
+//
+// Returns:
+//   - A slice containing the popped members. If the set is empty or the count is zero, an empty slice is returned.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+//	popped := set.SPop("myset", 3)
+//
+// In this example, three random members are removed and returned from the set "myset," and they are stored in the 'popped' slice.
+func (s *Set) SPop(key string, count int) []interface{} {
+	if !s.exists(key) || count <= 0 {
+		return []interface{}{}
+	}
+
+	set := s.records[key]
+	members := make([]interface{}, count)
+
+	i := 0
+	for k := range set {
+		members[i] = k
+		delete(set, k)
+		i++
+
+		if i == count {
+			break
+		}
+	}
+
+	return members
+}
+
 // newSet creates and returns a new empty set.
 func newSet() set {
 	return make(map[interface{}]struct{})
@@ -198,4 +278,10 @@ func isPresentInAll(sets []set, item interface{}) bool {
 	}
 
 	return true
+}
+
+// exists checks if a key exists in the Set's records.
+func (s *Set) exists(key string) bool {
+	_, exist := s.records[key]
+	return exist
 }
