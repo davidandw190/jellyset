@@ -4,9 +4,12 @@ package jellyset
 // keyExists is a placeholder to not write struct{}{} everywhere.
 var keyExists = struct{}{}
 
-// set is an alias for a map of elements to struct{} to mimic a set.
+// set represents individual sets within the Set type.
+// Each set is implemented as a map, with keys representing the elements in the set.
 type set map[interface{}]struct{}
 
+// Set represents the high-level interface for interacting with sets.
+// It encapsulates multiple sets, each associated with a unique key.
 type Set struct {
 	records map[string]set
 }
@@ -15,6 +18,11 @@ func New() *Set {
 	return &Set{
 		records: make(map[string]set),
 	}
+}
+
+// newSet creates and returns a new empty set.
+func newSet() set {
+	return make(map[interface{}]struct{})
 }
 
 // SAdd adds one or more members to the set associated with the provided key. If the key does not exist,
@@ -204,9 +212,9 @@ func (s *Set) SRem(key string, member interface{}) bool {
 // If the destination set does not exist, it creates a new set.
 //
 // Parameters:
-//   - src: The key associated with the source set.
-//   - dst: The key associated with the destination set.
-//   - member: The member to move from the source set to the destination set.
+//   - src: 	The key associated with the source set.
+//   - dest: 	The key associated with the destination set.
+//   - member: 	The member to move from the source set to the destination set.
 //
 // Returns:
 //   - true if the member was successfully moved, false otherwise.
@@ -218,27 +226,22 @@ func (s *Set) SRem(key string, member interface{}) bool {
 //	set.SMove("sourceSet", "destSet", "member2")
 //
 // In this example, it moves "member2" from the "sourceSet" to the "destSet," and it returns true.
-func (s *Set) SMove(source, destination string, member interface{}) bool {
-	if !s.fieldExists(source, member) {
+func (s *Set) SMove(src, dest string, member interface{}) bool {
+	if !s.fieldExists(src, member) {
 		return false
 	}
 
-	if !s.exists(destination) {
-		s.records[destination] = make(set)
+	if !s.exists(dest) {
+		s.records[dest] = make(set)
 	}
 
-	sourceSet := s.records[source]
-	destinationSet := s.records[destination]
+	srcSet := s.records[src]
+	destSet := s.records[dest]
 
-	sourceSet.remove(member)
-	destinationSet.add(member)
+	srcSet.remove(member)
+	destSet.add(member)
 
 	return true
-}
-
-// newSet creates and returns a new empty set.
-func newSet() set {
-	return make(map[interface{}]struct{})
 }
 
 // add adds one or more items to the set.
