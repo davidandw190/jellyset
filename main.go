@@ -167,6 +167,75 @@ func (s *Set) SIsMember(key string, member interface{}) bool {
 	return exists
 }
 
+// SRem removes the specified member from the set associated with the given key.
+// If the key does not exist or the member is not in the set, it returns false.
+//
+// Parameters:
+//   - key: 	The key associated with the set.
+//   - member: 	The member to remove from the set.
+//
+// Returns:
+//   - true if the member was successfully removed, false otherwise.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("myset", "member1", "member2", "member3")
+//	removed := set.SRem("myset", "member2")
+//
+// In this example, it removes "member2" from the set "myset," and 'removed' will be true.
+func (s *Set) SRem(key string, member interface{}) bool {
+	if !s.exists(key) {
+		return false
+	}
+
+	set := s.records[key]
+
+	if _, exists := set[member]; exists {
+		delete(set, member)
+		return true
+	}
+
+	return false
+}
+
+// SMove moves a member from the source set to the destination set.
+// If the source set does not exist or the member is not in the source set, it returns false.
+// If the destination set does not exist, it creates a new set.
+//
+// Parameters:
+//   - src: The key associated with the source set.
+//   - dst: The key associated with the destination set.
+//   - member: The member to move from the source set to the destination set.
+//
+// Returns:
+//   - true if the member was successfully moved, false otherwise.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("sourceSet", "member1", "member2")
+//	set.SMove("sourceSet", "destSet", "member2")
+//
+// In this example, it moves "member2" from the "sourceSet" to the "destSet," and it returns true.
+func (s *Set) SMove(source, destination string, member interface{}) bool {
+	if !s.fieldExists(source, member) {
+		return false
+	}
+
+	if !s.exists(destination) {
+		s.records[destination] = make(set)
+	}
+
+	sourceSet := s.records[source]
+	destinationSet := s.records[destination]
+
+	sourceSet.remove(member)
+	destinationSet.add(member)
+
+	return true
+}
+
 // newSet creates and returns a new empty set.
 func newSet() set {
 	return make(map[interface{}]struct{})
@@ -359,6 +428,19 @@ func isPresentInAll(sets []set, item interface{}) bool {
 func (s *Set) exists(key string) bool {
 	_, exist := s.records[key]
 	return exist
+}
+
+// fieldExists checks if the specified member exists in the set associated with the given key.
+// If the key does not exist, it returns false.
+func (s *Set) fieldExists(key string, member interface{}) bool {
+	if !s.exists(key) {
+		return false
+	}
+
+	set := s.records[key]
+	_, exists := set[member]
+
+	return exists
 }
 
 // randomElement returns a random element from the set.
