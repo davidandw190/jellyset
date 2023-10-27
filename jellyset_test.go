@@ -110,3 +110,31 @@ func TestSet_SRem(t *testing.T) {
 		}
 	})
 }
+
+func TestSet_SRandMember(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Retrieving from an existing set", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+		randomMembers := set.SRandMember("myset", 3)
+		if len(randomMembers) != 3 {
+			t.Errorf("Expected to retrieve 3 random members, but got %d", len(randomMembers))
+		}
+	})
+
+	t.Run("Retrieving from a non-existing set", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+		randomMembers := set.SRandMember("nonexistent", 3)
+		if len(randomMembers) != 0 {
+			t.Errorf("Expected to retrieve 0 random members, but got %d", len(randomMembers))
+		}
+	})
+
+	t.Run("Retrieving 0 random members", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+		randomMembers := set.SRandMember("myset", 0)
+		if len(randomMembers) != 0 {
+			t.Errorf("Expected to retrieve 0 random members, but got %d", len(randomMembers))
+		}
+	})
+}
