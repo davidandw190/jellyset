@@ -138,3 +138,31 @@ func TestSet_SRandMember(t *testing.T) {
 		}
 	})
 }
+
+func TestSet_SIsMember(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Checking for an existing member in a set", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3")
+		exists := set.SIsMember("myset", "member2")
+		if !exists {
+			t.Errorf("Expected member2 to exist in the set, but it doesn't")
+		}
+	})
+
+	t.Run("Checking for a non-existing member in a set", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3")
+		exists := set.SIsMember("myset", "nonexistent")
+		if exists {
+			t.Errorf("Expected nonexistent to not exist in the set, but it does")
+		}
+	})
+
+	t.Run("Checking for a member in a non-existing set", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3")
+		exists := set.SIsMember("nonexistent", "member1")
+		if exists {
+			t.Errorf("Expected member1 to not exist in the nonexistent set, but it does")
+		}
+	})
+}
