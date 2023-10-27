@@ -44,9 +44,10 @@ func TestJellyset_SAdd(t *testing.T) {
 
 func TestSet_SPop(t *testing.T) {
 	set := jellyset.New()
-	set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
 
 	t.Run("Popping elements from the existing set", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+
 		popped := set.SPop("myset", 3)
 		expected := []interface{}{"member1", "member2", "member3"}
 
@@ -56,6 +57,8 @@ func TestSet_SPop(t *testing.T) {
 	})
 
 	t.Run("Popping elements from a non-existing set", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+
 		popped := set.SPop("nonexistent", 2)
 		if len(popped) != 0 {
 			t.Errorf("Expected to pop 0 elements, but got %d", len(popped))
@@ -63,6 +66,8 @@ func TestSet_SPop(t *testing.T) {
 	})
 
 	t.Run("Popping 0 elements", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+
 		popped := set.SPop("myset", 0)
 		if len(popped) != 0 {
 			t.Errorf("Expected to pop 0 elements, but got %d", len(popped))
@@ -70,10 +75,38 @@ func TestSet_SPop(t *testing.T) {
 	})
 
 	t.Run("Popping -1 elements", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
+
 		popped := set.SPop("myset", -1)
 		if len(popped) != 0 {
 			t.Errorf("Expected to pop 0 elements, but got %d", len(popped))
 		}
 	})
+}
 
+func TestSet_SRem(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Removing a member from a set", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member2", "member3")
+		removed := set.SRem("myset", "member2")
+		if !removed {
+			t.Errorf("Expected to remove 'member2' from the set, but it was not removed")
+		}
+	})
+
+	t.Run("Removing a non-existent member", func(t *testing.T) {
+		set.SAdd("myset", "member1", "member3")
+		removed := set.SRem("myset", "nonexistent")
+		if removed {
+			t.Errorf("Expected not to remove 'nonexistent' from the set, but it was removed")
+		}
+	})
+
+	t.Run("Removing from a non-existent set", func(t *testing.T) {
+		removed := set.SRem("nonexistent", "member1")
+		if removed {
+			t.Errorf("Expected not to remove from a non-existent set, but removal occurred")
+		}
+	})
 }
