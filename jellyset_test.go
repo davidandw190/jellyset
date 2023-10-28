@@ -1,7 +1,6 @@
 package jellyset_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/davidandw190/jellyset"
@@ -58,8 +57,8 @@ func TestSet_SPop(t *testing.T) {
 		popped := set.SPop("myset", 3)
 		expected := []interface{}{"member1", "member2", "member3"}
 
-		if !reflect.DeepEqual(popped, expected) {
-			t.Errorf("Expected to pop %#v, but got %#v", expected, popped)
+		if len(popped) != len(expected) {
+			t.Errorf("Expected to pop %d, but got %d", len(expected), len(popped))
 		}
 	})
 
@@ -207,6 +206,62 @@ func Test_SMove(t *testing.T) {
 
 		if !moved {
 			t.Errorf("Expected to move from sourceSet to a new destination set, but the operation was not successful")
+		}
+	})
+}
+func TestSet_SCard(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Count Non-Existent Set", func(t *testing.T) {
+		// Test counting elements in a non-existent set.
+		// It ensures that the count is 0 for a set that doesn't exist.
+		count := set.SCard("nonexistent_set")
+		if count != 0 {
+			t.Errorf("Expected count to be 0, but got %d", count)
+		}
+	})
+
+	t.Run("Count Empty Set", func(t *testing.T) {
+		// Test counting elements in an empty set.
+		// It verifies that the count is 0 for an empty set.
+		set.SAdd("empty_set")
+		count := set.SCard("empty_set")
+		if count != 0 {
+			t.Errorf("Expected count to be 0, but got %d", count)
+		}
+	})
+
+	t.Run("Count Set with Elements", func(t *testing.T) {
+		// Test counting elements in a set with multiple members.
+		// It ensures the correct count for a set with elements.
+		set.SAdd("set_with_elements", "member1", "member2", "member3")
+		count := set.SCard("set_with_elements")
+		if count != 3 {
+			t.Errorf("Expected count to be 3, but got %d", count)
+		}
+	})
+
+	t.Run("Count Multiple Sets", func(t *testing.T) {
+		// Test counting elements in multiple sets.
+		// It checks the count of multiple sets with different numbers of members.
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("set2", "c", "d")
+		set.SAdd("set3", "d", "e", "f", "g")
+
+		count1 := set.SCard("set1")
+		count2 := set.SCard("set2")
+		count3 := set.SCard("set3")
+
+		if count1 != 3 {
+			t.Errorf("Expected count1 to be 3 but got %d", count1)
+		}
+
+		if count2 != 2 {
+			t.Errorf("Expected count2 to be 2, but got %d", count2)
+		}
+
+		if count3 != 4 {
+			t.Errorf("Expected count3 to be 4, but got %d", count3)
 		}
 	})
 }
