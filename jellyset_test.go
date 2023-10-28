@@ -265,3 +265,66 @@ func TestSet_SCard(t *testing.T) {
 		}
 	})
 }
+
+func TestSet_SMembers(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Retrieve Members of Non-Existent Set", func(t *testing.T) {
+		// Test retrieving members from a non-existent set.
+		// It verifies that an empty slice is returned for a set that doesn't exist.
+		members := set.SMembers("nonexistent_set")
+		if len(members) != 0 {
+			t.Errorf("Expected an empty slice, but got %v", members)
+		}
+	})
+
+	t.Run("Retrieve Members of Empty Set", func(t *testing.T) {
+		// Test retrieving members from an empty set.
+		// It ensures that an empty slice is returned for an empty set.
+		set.SAdd("empty_set")
+		members := set.SMembers("empty_set")
+		if len(members) != 0 {
+			t.Errorf("Expected an empty slice, but got %v", members)
+		}
+	})
+
+	t.Run("Retrieve Members of Set with Elements", func(t *testing.T) {
+		// Test retrieving members from a set with multiple members.
+		// It ensures that the correct members are retrieved.
+		set.SAdd("set_with_elements", "member1", "member2", "member3")
+		members := set.SMembers("set_with_elements")
+		expectedMembers := []interface{}{"member1", "member2", "member3"}
+
+		if len(members) != len(expectedMembers) {
+			t.Errorf("Expected members in number of %d, but got %d", len(expectedMembers), len(members))
+		}
+	})
+
+	t.Run("Retrieve Members of Multiple Sets", func(t *testing.T) {
+		// Test retrieving members from multiple sets.
+		// It checks the members of multiple sets with different members.
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("set2", "c", "d")
+		set.SAdd("set3", "d", "e", "f", "g")
+
+		members1 := set.SMembers("set1")
+		members2 := set.SMembers("set2")
+		members3 := set.SMembers("set3")
+
+		expectedMembers1 := []interface{}{"a", "b", "c"}
+		expectedMembers2 := []interface{}{"c", "d"}
+		expectedMembers3 := []interface{}{"d", "e", "f", "g"}
+
+		if len(members1) != len(expectedMembers1) {
+			t.Errorf("Expected members1 of size %d, but got %d", len(expectedMembers1), len(members1))
+		}
+
+		if len(members2) != len(expectedMembers2) {
+			t.Errorf("Expected members2 of size %d, but got %d", len(expectedMembers2), len(members2))
+		}
+
+		if len(members3) != len(expectedMembers3) {
+			t.Errorf("Expected members3 of size %d, but got %d", len(expectedMembers3), len(members3))
+		}
+	})
+}
