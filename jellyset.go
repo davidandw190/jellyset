@@ -299,6 +299,68 @@ func (s *Set) SMembers(key string) []interface{} {
 	return members
 }
 
+// SUnion returns a new set that is the union of multiple sets. It combines all elements
+// present in all the sets provided as arguments.
+//
+// Parameters:
+//   - keys: The keys associated with the sets to be combined in the union.
+//
+// Returns:
+//   - A slice containing the union of elements from all the specified sets.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("set1", "member1", "member2", "member3")
+//	set.SAdd("set2", "member2", "member3", "member4")
+//	result := set.SUnion("set1", "set2")
+//
+// In this example, the union of "set1" and "set2" is computed, and 'result' contains all unique elements from both sets.
+func (s *Set) SUnion(keys ...string) []interface{} {
+	if len(keys) == 0 {
+		return []interface{}{}
+	}
+
+	unionSet := make(set)
+
+	for _, key := range keys {
+		if s.exists(key) {
+			set := s.records[key]
+			for member := range set {
+				unionSet[member] = keyExists
+			}
+		}
+	}
+
+	return unionSet.list()
+}
+
+// SUnionStore computes the union of multiple sets and stores the result in a new set.
+//
+// Parameters:
+//   - dest: The key associated with the destination set where the result will be stored.
+//   - keys: The keys associated with the sets to be combined in the union.
+//
+// Returns:
+//   - The number of elements in the resulting union set.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("set1", "member1", "member2", "member3")
+//	set.SAdd("set2", "member2", "member3", "member4")
+//	count := set.SUnionStore("unionSet", "set1", "set2")
+//
+// In this example, the union of "set1" and "set2" is computed and stored in "unionSet," and 'count' contains the number of elements in the resulting union set.
+func (s *Set) SUnionStore(dest string, keys ...string) int {
+	union := s.SUnion(keys...)
+	for _, key := range union {
+		s.SAdd(dest, key)
+	}
+
+	return len(union)
+}
+
 // add adds one or more items to the set.
 // if no items are provided, it has no effect.
 func (s set) add(items ...interface{}) {
@@ -355,8 +417,10 @@ func (s set) copy() set {
 func (s set) list() []interface{} {
 	list := make([]interface{}, 0, len(s))
 
+	i := 0
 	for item := range s {
-		list = append(list, item)
+		list[i] = item
+		i++
 	}
 
 	return list
