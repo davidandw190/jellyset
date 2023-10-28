@@ -244,6 +244,61 @@ func (s *Set) SMove(src, dest string, member interface{}) bool {
 	return true
 }
 
+// SCard returns the number of elements in the set associated with the given key.
+// If the key does not exist, it returns 0, indicating an empty set.
+//
+// Parameters:
+//   - key:	The key associated with the set.
+//
+// Returns:
+//   - The number of elements in the set.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("myset", "member1", "member2", "member3")
+//	size := set.SCard("myset")
+//
+// In this example, it retrieves the size of the set "myset," which contains three members, and 'size' will be 3.
+func (s *Set) SCard(key string) int {
+	if !s.exists(key) {
+		return 0
+	}
+
+	set := s.records[key]
+	return set.size()
+}
+
+// SMembers returns a slice containing all the members of the set associated with the given key.
+// If the key does not exist, it returns an empty slice.
+//
+// Parameters:
+//   - key: The key associated with the set.
+//
+// Returns:
+//   - A slice containing all the members of the set. If the set is empty or the key does not exist, an empty slice is returned.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("myset", "member1", "member2", "member3")
+//	members := set.SMembers("myset")
+//
+// In this example, it retrieves all members from the set "myset," and 'members' will be a slice containing ["member1", "member2", "member3"].
+func (s *Set) SMembers(key string) []interface{} {
+	if !s.exists(key) {
+		return []interface{}{}
+	}
+
+	set := s.records[key]
+	members := make([]interface{}, 0, len(set))
+	for item := range set {
+		members = append(members, item)
+	}
+
+	return members
+}
+
 // add adds one or more items to the set.
 // if no items are provided, it has no effect.
 func (s set) add(items ...interface{}) {
