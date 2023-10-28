@@ -145,6 +145,7 @@ func TestSet_SIsMember(t *testing.T) {
 	t.Run("Checking for an existing member in a set", func(t *testing.T) {
 		set.SAdd("myset", "member1", "member2", "member3")
 		exists := set.SIsMember("myset", "member2")
+
 		if !exists {
 			t.Errorf("Expected member2 to exist in the set, but it doesn't")
 		}
@@ -153,6 +154,7 @@ func TestSet_SIsMember(t *testing.T) {
 	t.Run("Checking for a non-existing member in a set", func(t *testing.T) {
 		set.SAdd("myset", "member1", "member2", "member3")
 		exists := set.SIsMember("myset", "nonexistent")
+
 		if exists {
 			t.Errorf("Expected nonexistent to not exist in the set, but it does")
 		}
@@ -161,8 +163,49 @@ func TestSet_SIsMember(t *testing.T) {
 	t.Run("Checking for a member in a non-existing set", func(t *testing.T) {
 		set.SAdd("myset", "member1", "member2", "member3")
 		exists := set.SIsMember("nonexistent", "member1")
+
 		if exists {
 			t.Errorf("Expected member1 to not exist in the nonexistent set, but it does")
+		}
+	})
+}
+
+func Test_SMove(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Moving a member from a source set to a destination set", func(t *testing.T) {
+		set.SAdd("sourceSet", "member1", "member2")
+		moved := set.SMove("sourceSet", "destSet", "member2")
+
+		if !moved {
+			t.Errorf("Expected to move member2 from sourceSet to destSet, but the operation was not successful")
+		}
+	})
+
+	t.Run("Moving a non-existing member from a source set to a destination set", func(t *testing.T) {
+		set.SAdd("sourceSet", "member1", "member2")
+		moved := set.SMove("sourceSet", "destSet", "nonexistent")
+
+		if moved {
+			t.Errorf("Expected not to move a nonexistent member, but the operation was successful")
+		}
+	})
+
+	t.Run("Moving a member from a non-existing source set to a destination set", func(t *testing.T) {
+		set.SAdd("sourceSet", "member1", "member2")
+		moved := set.SMove("nonexistentSource", "destSet", "member1")
+
+		if moved {
+			t.Errorf("Expected not to move from a nonexistent source set, but the operation was successful")
+		}
+	})
+
+	t.Run("Moving a member from a source set to a non-existing destination set", func(t *testing.T) {
+		set.SAdd("sourceSet", "member1", "member2")
+		moved := set.SMove("sourceSet", "nonexistentDest", "member1")
+
+		if !moved {
+			t.Errorf("Expected to move from sourceSet to a new destination set, but the operation was not successful")
 		}
 	})
 }
