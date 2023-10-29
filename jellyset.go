@@ -44,7 +44,7 @@ func newSet() set {
 
 func (s *Set) SAdd(key string, members ...interface{}) int {
 	if !s.exists(key) {
-		s.records[key] = make(set)
+		s.records[key] = newSet()
 	}
 
 	added := 0
@@ -321,7 +321,7 @@ func (s *Set) SUnion(keys ...string) []interface{} {
 		return []interface{}{}
 	}
 
-	unionSet := make(set)
+	unionSet := newSet()
 
 	for _, key := range keys {
 		if s.exists(key) {
@@ -359,6 +359,83 @@ func (s *Set) SUnionStore(dest string, keys ...string) int {
 	}
 
 	return len(union)
+}
+
+// SKeyExists checks if the specified key exists in the Set.
+//
+// Parameters:
+//   - key: The key to check for existence.
+//
+// Returns:
+//   - true if the key exists in the Set, false otherwise.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("myset", "member1", "member2", "member3")
+//	exists := set.SKeyExists("myset")
+//
+// In this example, it checks if the key "myset" exists in the Set, and 'exists' will be true.
+func (s *Set) SKeyExists(key string) bool {
+	return s.exists(key)
+}
+
+// SClear deletes the specified key and its associated set from the records.
+//
+// Parameters:
+//   - key: The key associated with the set to be cleared.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("myset", "member1", "member2", "member3")
+//	set.SClear("myset")
+//
+// In this example, the set associated with the key "myset" is deleted from the records.
+func (s *Set) SClear(key string) {
+	if s.exists(key) {
+		delete(s.records, key)
+	}
+}
+
+// SDiff returns a new set that contains items which are in the first set but not in the others.
+//
+// Parameters:
+//   - keys: The keys associated with the sets to be used in the difference operation.
+//
+// Returns:
+//   - A slice containing the elements that are present in the first set but not in the other specified sets.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("set1", "member1", "member2", "member3")
+//	set.SAdd("set2", "member2", "member3", "member4")
+//	result := set.SDiff("set1", "set2")
+//
+// In this example, the difference between "set1" and "set2" is computed, and 'result' contains elements unique to "set1."
+func (s *Set) SDiff(keys ...string) []interface{} {
+	if len(keys) == 0 {
+		return []interface{}{}
+	}
+
+	diffSet := newSet()
+
+	for _, key := range keys {
+		if s.exists(key) {
+			set := s.records[key]
+			for member := range set {
+				if _, exists := diffSet[member]; exists {
+					delete(diffSet, member)
+				} else {
+					diffSet[member] = keyExists
+				}
+			}
+		}
+	}
+
+	return diffSet.list()
+
 }
 
 // add adds one or more items to the set.
@@ -404,14 +481,14 @@ func (s set) has(items ...interface{}) bool {
 	return exist
 }
 
-// copy creates a copy of the set and returns it.
-func (s set) copy() set {
-	copy := newSet()
-	for item := range s {
-		copy.add(item)
-	}
-	return copy
-}
+// // copy creates a copy of the set and returns it.
+// func (s set) copy() set {
+// 	copy := newSet()
+// 	for item := range s {
+// 		copy.add(item)
+// 	}
+// 	return copy
+// }
 
 // list returns all items in the set as a slice.
 func (s set) list() []interface{} {
@@ -426,29 +503,29 @@ func (s set) list() []interface{} {
 	return list
 }
 
-// foreach iterates over the items in the set and calls the provided function for each set member.
-// the iteration continues until all items in the set have been visited or the closure returns false.
-func (s set) foreach(callback func(item interface{}) bool) {
-	for item := range s {
-		if callback(item) {
-			break
-		}
-	}
-}
+// // foreach iterates over the items in the set and calls the provided function for each set member.
+// // the iteration continues until all items in the set have been visited or the closure returns false.
+// func (s set) foreach(callback func(item interface{}) bool) {
+// 	for item := range s {
+// 		if callback(item) {
+// 			break
+// 		}
+// 	}
+// }
 
-// merge merges the current set with another set.
-// It is basically the implementation of the set union between 2 sets.
-func (s set) merge(t set) {
-	for item := range t {
-		s[item] = keyExists
-	}
-}
+// // merge merges the current set with another set.
+// // It is basically the implementation of the set union between 2 sets.
+// func (s set) merge(t set) {
+// 	for item := range t {
+// 		s[item] = keyExists
+// 	}
+// }
 
-// separate removes the set items containing in t from set s.
-// Does not undo merge!!
-func (s set) separate(t set) {
-	s.remove(t.list()...)
-}
+// // separate removes the set items containing in t from set s.
+// // Does not undo merge!!
+// func (s set) separate(t set) {
+// 	s.remove(t.list()...)
+// }
 
 // size just returns the size of the s set
 func (s set) size() int {
