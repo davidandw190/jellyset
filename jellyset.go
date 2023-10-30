@@ -421,23 +421,45 @@ func (s *Set) SDiff(keys ...string) []interface{} {
 		return []interface{}{}
 	}
 
-	diffSet := newSet()
+	if len(keys) == 1 {
+		if s.exists(keys[0]) {
+			return s.records[keys[0]].list()
+		}
+
+		return []interface{}{}
+	}
+
+	excludeMap := make(map[interface{}]bool)
 
 	for _, key := range keys {
-		if s.exists(key) {
-			set := s.records[key]
-			for member := range set {
-				if _, exists := diffSet[member]; exists {
-					delete(diffSet, member)
-				} else {
-					diffSet[member] = keyExists
-				}
+		if key != keys[0] {
+			nextSet, ok := s.records[key]
+			if !ok {
+				return []interface{}{}
 			}
+
+			for item := range nextSet {
+				excludeMap[item] = true
+			}
+		}
+
+	}
+
+	firstSet := s.records[keys[0]]
+	result := make([]interface{}, 0, len(firstSet))
+
+	for item := range firstSet {
+		if !excludeMap[item] {
+			result = append(result, item)
 		}
 	}
 
-	return diffSet.list()
+	return result
+}
 
+func (s *Set) SDiffStore(storeKey string, keys ...string) int {
+	// TODO: implement SDIffStore and optimize SUnionStore also
+	return 0
 }
 
 // SInter returns a new set that contains items present in all the specified sets.
@@ -465,7 +487,6 @@ func (s *Set) SInter(keys ...string) []interface{} {
 		if s.exists(keys[0]) {
 			return s.records[keys[0]].list()
 		}
-
 		return []interface{}{}
 	}
 
@@ -498,12 +519,41 @@ func (s *Set) SInter(keys ...string) []interface{} {
 
 }
 
+// SInterStore computes the intersection of sets specified by the provided keys
+// and stores the result in a new set identified by storeKey.
+//
+// Parameters:
+//   - storeKey: The key where the resulting intersection will be stored.
+//   - keys: One or more keys associated with the sets to be intersected.
+//
+// Returns:
+//   - The number of elements in the resulting intersection set.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("set1", "member1", "member2", "member3")
+//	set.SAdd("set2", "member2", "member3", "member4")
+//	count := set.SInterStore("resultSet", "set1", "set2")
+//
+// In this example, it calculates the intersection of "set1" and "set2" and stores the result in "resultSet."
+// The resulting intersection set contains "member2" and "member3," and 'count' will be 2.
+func (s *Set) SInterStore(storeKey string, keys ...string) int {
+	intersection := s.SInter(keys...)
+
+	for _, interKey := range intersection {
+		s.SAdd(storeKey, interKey)
+	}
+
+	return len(intersection)
+}
+
 // existsInAll checks if an item exists in all given sets.
 func existsInAll(item interface{}, currentKey string, keys []string, s *Set) bool {
 	for _, key := range keys {
 		if key != currentKey {
 			nextSet, ok := s.records[key]
-			if !ok || nextSet.has(item) {
+			if !ok || !nextSet.has(item) {
 				return false
 			}
 		}
