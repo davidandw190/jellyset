@@ -250,7 +250,7 @@ func (s *Set) SMove(src, dest string, member interface{}) bool {
 // If the key does not exist, it returns 0, indicating an empty set.
 //
 // Parameters:
-//   - key:	The key associated with the set.
+//   - key:		The key associated with the set.
 //
 // Returns:
 //   - The number of elements in the set.
@@ -275,7 +275,7 @@ func (s *Set) SCard(key string) int {
 // If the key does not exist, it returns an empty slice.
 //
 // Parameters:
-//   - key: The key associated with the set.
+//   - key: 	The key associated with the set.
 //
 // Returns:
 //   - A slice containing all the members of the set. If the set is empty or the key does not exist, an empty slice is returned.
@@ -305,7 +305,7 @@ func (s *Set) SMembers(key string) []interface{} {
 // present in all the sets provided as arguments.
 //
 // Parameters:
-//   - keys: The keys associated with the sets to be combined in the union.
+//   - keys: 	The keys associated with the sets to be combined in the union.
 //
 // Returns:
 //   - A slice containing the union of elements from all the specified sets.
@@ -340,8 +340,8 @@ func (s *Set) SUnion(keys ...string) []interface{} {
 // SUnionStore computes the union of multiple sets and stores the result in a new set.
 //
 // Parameters:
-//   - dest: The key associated with the destination set where the result will be stored.
-//   - keys: The keys associated with the sets to be combined in the union.
+//   - storeKey: 	The key associated with the destination set where the result will be stored.
+//   - keys: 		The keys associated with the sets to be combined in the union.
 //
 // Returns:
 //   - The number of elements in the resulting union set.
@@ -354,10 +354,10 @@ func (s *Set) SUnion(keys ...string) []interface{} {
 //	count := set.SUnionStore("unionSet", "set1", "set2")
 //
 // In this example, the union of "set1" and "set2" is computed and stored in "unionSet," and 'count' contains the number of elements in the resulting union set.
-func (s *Set) SUnionStore(dest string, keys ...string) int {
+func (s *Set) SUnionStore(storeKey string, keys ...string) int {
 	union := s.SUnion(keys...)
-	for _, key := range union {
-		s.SAdd(dest, key)
+	for _, unionKey := range union {
+		s.SAdd(storeKey, unionKey)
 	}
 
 	return len(union)
@@ -366,7 +366,7 @@ func (s *Set) SUnionStore(dest string, keys ...string) int {
 // SKeyExists checks if the specified key exists in the Set.
 //
 // Parameters:
-//   - key: The key to check for existence.
+//   - key: 	The key to check for existence.
 //
 // Returns:
 //   - true if the key exists in the Set, false otherwise.
@@ -385,7 +385,7 @@ func (s *Set) SKeyExists(key string) bool {
 // SClear deletes the specified key and its associated set from the records.
 //
 // Parameters:
-//   - key: The key associated with the set to be cleared.
+//   - key: 	The key associated with the set to be cleared.
 //
 // Example:
 //
@@ -403,7 +403,7 @@ func (s *Set) SClear(key string) {
 // SDiff returns a new set that contains items which are in the first set but not in the others.
 //
 // Parameters:
-//   - keys: The keys associated with the sets to be used in the difference operation.
+//   - keys: 	The keys associated with the sets to be used in the difference operation.
 //
 // Returns:
 //   - A slice containing the elements that are present in the first set but not in the other specified sets.
@@ -457,15 +457,39 @@ func (s *Set) SDiff(keys ...string) []interface{} {
 	return result
 }
 
+// SDiffStore computes the set difference between the first key provided and all the other keys.
+// It stores the result in a new set identified by storeKey.
+//
+// Parameters:
+//   - storeKey: 	The key where the resulting set difference will be stored.
+//   - keys: 		One or more keys associated with the sets to calculate the difference.
+//
+// Returns:
+//   - The number of elements in the resulting difference set.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("set1", "member1", "member2", "member3")
+//	set.SAdd("set2", "member2", "member3", "member4")
+//	count := set.SDiffStore("resultSet", "set1", "set2")
+//
+// In this example, it calculates the difference between "set1" and "set2" and stores the result in "resultSet."
+// The resulting difference set contains "member1," and 'count' will be 1.
 func (s *Set) SDiffStore(storeKey string, keys ...string) int {
-	// TODO: implement SDIffStore and optimize SUnionStore also
-	return 0
+	difference := s.SDiff(keys...)
+
+	for _, diffKey := range difference {
+		s.SAdd(storeKey, diffKey)
+	}
+
+	return len(difference)
 }
 
 // SInter returns a new set that contains items present in all the specified sets.
 //
 // Parameters:
-//   - keys: The keys associated with the sets to be intersected.
+//   - keys: 	The keys associated with the sets to be intersected.
 //
 // Returns:
 //   - A slice containing the intersection of elements from all the specified sets.
@@ -477,7 +501,7 @@ func (s *Set) SDiffStore(storeKey string, keys ...string) int {
 //	set.SAdd("set2", "member2", "member3", "member4")
 //	result := set.SInter("set1", "set2")
 //
-// In this example, the intersection of "set1" and "set2" is computed, and 'result' contains the common elements present in both sets.
+// In this example, the intersection of "set1" and "set2" is computed, and 'result'.
 func (s *Set) SInter(keys ...string) []interface{} {
 	if len(keys) == 0 {
 		return []interface{}{}
@@ -507,24 +531,41 @@ func (s *Set) SInter(keys ...string) []interface{} {
 		}
 	}
 
-	result := newSet()
+	inAllSets := make(map[interface{}]bool)
 
 	for item := range smallestSet {
-		if existsInAll(item, smallestKey, keys, s) {
-			result.add(item)
+		inAllSets[item] = true
+	}
+
+	for _, key := range keys {
+		if key != smallestKey {
+			nextSet, ok := s.records[key]
+			if !ok {
+				return []interface{}{}
+			}
+
+			for item := range inAllSets {
+				if !nextSet.has(item) {
+					delete(inAllSets, item)
+				}
+			}
 		}
 	}
 
-	return result.list()
+	result := make([]interface{}, 0, len(inAllSets))
+	for item := range inAllSets {
+		result = append(result, item)
+	}
 
+	return result
 }
 
 // SInterStore computes the intersection of sets specified by the provided keys
 // and stores the result in a new set identified by storeKey.
 //
 // Parameters:
-//   - storeKey: The key where the resulting intersection will be stored.
-//   - keys: One or more keys associated with the sets to be intersected.
+//   - storeKey: 	The key where the resulting intersection will be stored.
+//   - keys: 		One or more keys associated with the sets to be intersected.
 //
 // Returns:
 //   - The number of elements in the resulting intersection set.
