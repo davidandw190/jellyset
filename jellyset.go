@@ -1,6 +1,8 @@
 // Package jellyset  provides a Redis-like Set data structure.
 package jellyset
 
+import "math"
+
 // keyExists is a placeholder to not write struct{}{} everywhere.
 var keyExists = struct{}{}
 
@@ -438,6 +440,77 @@ func (s *Set) SDiff(keys ...string) []interface{} {
 
 }
 
+// SInter returns a new set that contains items present in all the specified sets.
+//
+// Parameters:
+//   - keys: The keys associated with the sets to be intersected.
+//
+// Returns:
+//   - A slice containing the intersection of elements from all the specified sets.
+//
+// Example:
+//
+//	set := New()
+//	set.SAdd("set1", "member1", "member2", "member3")
+//	set.SAdd("set2", "member2", "member3", "member4")
+//	result := set.SInter("set1", "set2")
+//
+// In this example, the intersection of "set1" and "set2" is computed, and 'result' contains the common elements present in both sets.
+func (s *Set) SInter(keys ...string) []interface{} {
+	if len(keys) == 0 {
+		return []interface{}{}
+	}
+
+	if len(keys) == 1 {
+		if s.exists(keys[0]) {
+			return s.records[keys[0]].list()
+		}
+
+		return []interface{}{}
+	}
+
+	var smallestSet set
+	var smallestKey string
+	var smallestSize = math.MaxInt
+
+	for _, key := range keys {
+		currentSet, ok := s.records[key]
+		if !ok {
+			return []interface{}{}
+		}
+
+		if len(currentSet) < smallestSize {
+			smallestSize = len(currentSet)
+			smallestSet = currentSet
+			smallestKey = key
+		}
+	}
+
+	result := newSet()
+
+	for item := range smallestSet {
+		if existsInAll(item, smallestKey, keys, s) {
+			result.add(item)
+		}
+	}
+
+	return result.list()
+
+}
+
+// existsInAll checks if an item exists in all given sets.
+func existsInAll(item interface{}, currentKey string, keys []string, s *Set) bool {
+	for _, key := range keys {
+		if key != currentKey {
+			nextSet, ok := s.records[key]
+			if !ok || nextSet.has(item) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // add adds one or more items to the set.
 // if no items are provided, it has no effect.
 func (s set) add(items ...interface{}) {
@@ -481,14 +554,14 @@ func (s set) has(items ...interface{}) bool {
 	return exist
 }
 
-// // copy creates a copy of the set and returns it.
-// func (s set) copy() set {
-// 	copy := newSet()
-// 	for item := range s {
-// 		copy.add(item)
-// 	}
-// 	return copy
-// }
+// copy creates a copy of the set and returns it.
+func (s set) copy() set {
+	copy := newSet()
+	for item := range s {
+		copy.add(item)
+	}
+	return copy
+}
 
 // list returns all items in the set as a slice.
 func (s set) list() []interface{} {
@@ -585,42 +658,6 @@ func difference(sets ...set) set {
 	}
 
 	return resultSet
-}
-
-// intersection returns a new set that contains items present in all given sets.
-// It precomputes the size of the resulting set based on the size of the smallest input set.
-func intersection(sets ...set) set {
-	if len(sets) == 0 {
-		return newSet()
-	}
-
-	minSize := len(sets[0])
-
-	for i := 1; i < len(sets); i++ {
-		if len(sets[i]) < minSize {
-			minSize = len(sets[i])
-		}
-	}
-
-	resultSet := make(set, minSize)
-
-	for item := range sets[0] {
-		if isPresentInAll(sets[1:], item) {
-			resultSet[item] = keyExists
-		}
-	}
-	return resultSet
-}
-
-// isPresentInAll checks if an item is present in all given sets.
-func isPresentInAll(sets []set, item interface{}) bool {
-	for _, s := range sets {
-		if _, exists := s[item]; !exists {
-			return false
-		}
-	}
-
-	return true
 }
 
 // exists checks if a key exists in the Set's records.
