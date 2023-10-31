@@ -385,17 +385,23 @@ func TestSet_SUnion(t *testing.T) {
 	set := jellyset.New()
 
 	t.Run("Union of Two Non-Existent Sets", func(t *testing.T) {
+		// Test the union of two non-existent sets.
+		// It verifies that an empty slice is returned for both sets that don't exist.
 		result := set.SUnion("nonexistent_set1", "nonexistent_set2")
 		assertEmptySlice(t, result)
 	})
 
 	t.Run("Union of Non-Existent Set with Empty Set", func(t *testing.T) {
+		// Test the union of a non-existent set with an empty set.
+		// It ensures that an empty slice is returned when one of the sets doesn't exist.
 		set.SAdd("empty_set")
 		result := set.SUnion("nonexistent_set", "empty_set")
 		assertEmptySlice(t, result)
 	})
 
 	t.Run("Union of Empty Sets", func(t *testing.T) {
+		// Test the union of a non-empty set with an empty set.
+		// It ensures that the non-empty set is returned, and the empty set is ignored.
 		set.SAdd("empty_set1")
 		set.SAdd("empty_set2")
 		result := set.SUnion("empty_set1", "empty_set2")
@@ -403,6 +409,8 @@ func TestSet_SUnion(t *testing.T) {
 	})
 
 	t.Run("Union of Non-Empty Sets", func(t *testing.T) {
+		// Test the union of two non-empty sets.
+		// It ensures that the union of the sets is correctly computed.
 		set.SAdd("set1", "a", "b", "c")
 		set.SAdd("set2", "c", "d", "e")
 		set.SAdd("set3", "e", "f", "g")
@@ -414,6 +422,8 @@ func TestSet_SUnion(t *testing.T) {
 	})
 
 	t.Run("Union of Sets with Duplicates", func(t *testing.T) {
+		// Test retrieving members from a non-existent set.
+		// It verifies that an empty slice is returned for a set that doesn't exist.
 		set.SAdd("set1", "a", "b", "c")
 		set.SAdd("set2", "c", "d", "e", "a")
 		set.SAdd("set3", "e", "f", "g", "a")
@@ -421,6 +431,62 @@ func TestSet_SUnion(t *testing.T) {
 		result := set.SUnion("set1", "set2", "set3")
 		expectedResult := []interface{}{"a", "b", "c", "d", "e", "f", "g"}
 		assertSlicesEqualIgnoreOrder(t, expectedResult, result, "Union of Sets with Duplicates")
+	})
+
+}
+
+func TestSet_SUnionStore(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Union Store with Two Non-Existent Sets", func(t *testing.T) {
+		// Test the union store operation with two non-existent sets.
+		// It verifies that the result set is also non-existent.
+		count := set.SUnionStore("result", "nonexistent_set1", "nonexistent_set2")
+		assertSetSize(t, set, "result", 0)
+		assertCountEqual(t, count, 0)
+	})
+
+	t.Run("Union Store with Non-Existent Set and an Empty Set", func(t *testing.T) {
+		// Test the union store operation with a non-existent set and an empty set.
+		// It ensures that the result set is empty, and no set is created when one of the input sets doesn't exist.
+		set.SAdd("empty_set")
+		count := set.SUnionStore("result", "nonexiste_set", "empty_set")
+		assertSetSize(t, set, "result", 0)
+		assertCountEqual(t, count, 0)
+	})
+
+	t.Run("Union Store with Two Empty Sets", func(t *testing.T) {
+		// Test the union store operation with an empty set.
+		// It verifies that the result set is a copy of the non-empty set, and the empty set is ignored.
+		set.SAdd("empty_set1")
+		set.SAdd("empty_set2")
+		count := set.SUnionStore("result", "empty_set1", "empty_set2")
+		assertSetSize(t, set, "result", 0)
+		assertCountEqual(t, count, 0)
+	})
+
+	t.Run("Union Store with Non-Empty Sets", func(t *testing.T) {
+		// Test the union store operation with an empty set.
+		// It verifies that the result set is a copy of the non-empty set, and the empty set is ignored.
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("set2", "c", "d", "e")
+		set.SAdd("set3", "e", "f", "g")
+
+		count := set.SUnionStore("result", "set1", "set2", "set3")
+		assertSetSize(t, set, "result", 7)
+		assertCountEqual(t, count, 7)
+	})
+
+	t.Run("Union Store with Sets Containing Duplicates", func(t *testing.T) {
+		// Test the union store operation with two non-empty sets.
+		// It ensures that the result set contains the union of the input sets.
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("set2", "c", "d", "e", "a")
+		set.SAdd("set3", "e", "f", "g", "a")
+
+		count := set.SUnionStore("result", "set1", "set2", "set3")
+		assertSetSize(t, set, "result", 7)
+		assertCountEqual(t, count, 7)
 	})
 
 }
