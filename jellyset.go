@@ -318,23 +318,26 @@ func (s *Set) SMembers(key string) []interface{} {
 //	result := set.SUnion("set1", "set2")
 //
 // In this example, the union of "set1" and "set2" is computed, and 'result' contains all unique elements from both sets.
+// SUnion returns a new set that is the union of multiple sets. It combines all elements
+// present in all the sets provided as arguments.
 func (s *Set) SUnion(keys ...string) []interface{} {
-	if len(keys) == 0 {
-		return []interface{}{}
-	}
-
-	unionSet := newSet()
+	uniqueElements := newSet()
 
 	for _, key := range keys {
-		if s.exists(key) {
-			set := s.records[key]
-			for member := range set {
-				unionSet[member] = keyExists
+		if set, exists := s.records[key]; exists {
+			// Iterate over elements in the current set and add them to the uniqueElements map.
+			for item := range set {
+				uniqueElements[item] = struct{}{}
 			}
 		}
 	}
 
-	return unionSet.list()
+	result := make([]interface{}, 0, len(uniqueElements))
+	for item := range uniqueElements {
+		result = append(result, item)
+	}
+
+	return result
 }
 
 // SUnionStore computes the union of multiple sets and stores the result in a new set.
@@ -677,13 +680,13 @@ func (s set) list() []interface{} {
 // 	}
 // }
 
-// // merge merges the current set with another set.
-// // It is basically the implementation of the set union between 2 sets.
-// func (s set) merge(t set) {
-// 	for item := range t {
-// 		s[item] = keyExists
-// 	}
-// }
+// merge merges the current set with another set.
+// It is basically the implementation of the set union between 2 sets.
+func (s set) merge(secondSet set) {
+	for item := range secondSet {
+		s[item] = keyExists
+	}
+}
 
 // // separate removes the set items containing in t from set s.
 // // Does not undo merge!!

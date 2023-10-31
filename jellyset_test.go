@@ -6,6 +6,72 @@ import (
 	"github.com/davidandw190/jellyset"
 )
 
+// Helper function to assert that a slice is empty.
+func assertEmptySlice(t *testing.T, slice []interface{}) {
+	t.Helper()
+	if len(slice) != 0 {
+		t.Errorf("Expected an empty slice, but got %v", slice)
+	}
+}
+
+// Helper function to assert that two slices are equal.
+func assertSlicesEqual(t *testing.T, slice1, slice2 []interface{}) {
+	t.Helper()
+	if len(slice1) != len(slice2) {
+		t.Errorf("Slices are of different lengths. Expected %v, but got %v", slice2, slice1)
+		return
+	}
+
+	for i := range slice1 {
+		if slice1[i] != slice2[i] {
+			t.Errorf("Slices differ at index %d. Expected %v, but got %v", i, slice2[i], slice1[i])
+		}
+	}
+}
+
+// Helper function to assert that a set has the expected size.
+func assertSetSize(t *testing.T, s *jellyset.Set, key string, expectedSize int) {
+	t.Helper()
+	if size := s.SCard(key); size != expectedSize {
+		t.Errorf("Expected the size of set %s to be %d, but got %d", key, expectedSize, size)
+	}
+}
+
+// Helper function to assert that a count is equal to the expected value.
+func assertCountEqual(t *testing.T, count, expected int) {
+	t.Helper()
+	if count != expected {
+		t.Errorf("Expected count to be %d, but got %d", expected, count)
+	}
+}
+
+func assertSlicesEqualIgnoreOrder(t *testing.T, expected, actual []interface{}, message string) {
+	t.Helper()
+
+	if len(expected) != len(actual) {
+		t.Errorf("%s: Slices have different lengths. Expected %d, got %d.", message, len(expected), len(actual))
+		return
+	}
+
+	expectedMap := make(map[interface{}]int)
+	actualMap := make(map[interface{}]int)
+
+	for _, item := range expected {
+		expectedMap[item]++
+	}
+
+	for _, item := range actual {
+		actualMap[item]++
+	}
+
+	for key, expectedCount := range expectedMap {
+		if actualCount, exists := actualMap[key]; !exists || actualCount != expectedCount {
+			t.Errorf("%s: Expected slice does not match the actual slice.", message)
+			return
+		}
+	}
+}
+
 func TestSet_SAdd(t *testing.T) {
 	set := jellyset.New()
 
@@ -13,18 +79,14 @@ func TestSet_SAdd(t *testing.T) {
 		// Test adding elements to a new set.
 		// It checks if the correct number of elements was added.
 		count := set.SAdd("myset", "member1", "member2", "member3")
-		if count != 3 {
-			t.Errorf("Expected to add 3 elements, but got %d", count)
-		}
+		assertCountEqual(t, count, 3)
 	})
 
 	t.Run("Add to Existing Set", func(t *testing.T) {
 		// Test adding elements to an existing set.
 		// It checks if the correct number of elements was added.
 		count := set.SAdd("myset", "member3", "member4", "member5")
-		if count != 2 {
-			t.Errorf("Expected to add 2 elements, but got %d", count)
-		}
+		assertCountEqual(t, count, 2)
 	})
 
 	t.Run("Add to Multiple Sets", func(t *testing.T) {
@@ -36,13 +98,8 @@ func TestSet_SAdd(t *testing.T) {
 		count1 := set.SAdd("myset1", "member4", "member5")
 		count2 := set.SAdd("myset2", "member1", "member2")
 
-		if count1 != 2 {
-			t.Errorf("Expected to add 2 elements to myset1, but got %d", count1)
-		}
-
-		if count2 != 2 {
-			t.Errorf("Expected to add 2 elements to myset2, but got %d", count2)
-		}
+		assertCountEqual(t, count1, 2)
+		assertCountEqual(t, count2, 2)
 	})
 }
 
@@ -60,6 +117,7 @@ func TestSet_SPop(t *testing.T) {
 		if len(popped) != len(expected) {
 			t.Errorf("Expected to pop %d, but got %d", len(expected), len(popped))
 		}
+
 	})
 
 	t.Run("Pop from Non-Existing Set", func(t *testing.T) {
@@ -68,9 +126,7 @@ func TestSet_SPop(t *testing.T) {
 		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
 
 		popped := set.SPop("nonexistent", 2)
-		if len(popped) != 0 {
-			t.Errorf("Expected to pop 0 elements, but got %d", len(popped))
-		}
+		assertEmptySlice(t, popped)
 	})
 
 	t.Run("Pop 0 Elements", func(t *testing.T) {
@@ -79,9 +135,7 @@ func TestSet_SPop(t *testing.T) {
 		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
 
 		popped := set.SPop("myset", 0)
-		if len(popped) != 0 {
-			t.Errorf("Expected to pop 0 elements, but got %d", len(popped))
-		}
+		assertEmptySlice(t, popped)
 	})
 
 	t.Run("Pop -1 Elements", func(t *testing.T) {
@@ -90,9 +144,7 @@ func TestSet_SPop(t *testing.T) {
 		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
 
 		popped := set.SPop("myset", -1)
-		if len(popped) != 0 {
-			t.Errorf("Expected to pop 0 elements, but got %d", len(popped))
-		}
+		assertEmptySlice(t, popped)
 	})
 }
 
@@ -327,4 +379,48 @@ func TestSet_SMembers(t *testing.T) {
 			t.Errorf("Expected members3 of size %d, but got %d", len(expectedMembers3), len(members3))
 		}
 	})
+}
+
+func TestSet_SUnion(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Union of Two Non-Existent Sets", func(t *testing.T) {
+		result := set.SUnion("nonexistent_set1", "nonexistent_set2")
+		assertEmptySlice(t, result)
+	})
+
+	t.Run("Union of Non-Existent Set with Empty Set", func(t *testing.T) {
+		set.SAdd("empty_set")
+		result := set.SUnion("nonexistent_set", "empty_set")
+		assertEmptySlice(t, result)
+	})
+
+	t.Run("Union of Empty Sets", func(t *testing.T) {
+		set.SAdd("empty_set1")
+		set.SAdd("empty_set2")
+		result := set.SUnion("empty_set1", "empty_set2")
+		assertEmptySlice(t, result)
+	})
+
+	t.Run("Union of Non-Empty Sets", func(t *testing.T) {
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("set2", "c", "d", "e")
+		set.SAdd("set3", "e", "f", "g")
+
+		result := set.SUnion("set1", "set2", "set3")
+		expectedResult := []interface{}{"a", "b", "c", "d", "e", "f", "g"}
+
+		assertSlicesEqualIgnoreOrder(t, expectedResult, result, "Union of Non-Empty Sets")
+	})
+
+	t.Run("Union of Sets with Duplicates", func(t *testing.T) {
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("set2", "c", "d", "e", "a")
+		set.SAdd("set3", "e", "f", "g", "a")
+
+		result := set.SUnion("set1", "set2", "set3")
+		expectedResult := []interface{}{"a", "b", "c", "d", "e", "f", "g"}
+		assertSlicesEqualIgnoreOrder(t, expectedResult, result, "Union of Sets with Duplicates")
+	})
+
 }
