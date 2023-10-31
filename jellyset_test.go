@@ -45,6 +45,22 @@ func assertCountEqual(t *testing.T, count, expected int) {
 	}
 }
 
+// Helper function to assert that a key exists.
+func assertKeyExists(t *testing.T, exists bool) {
+	t.Helper()
+	if !exists {
+		t.Errorf("Expected the key to exist, but it does not.")
+	}
+}
+
+// Helper function to assert that a key does not exist.
+func assertKeyDoesNotExist(t *testing.T, exists bool) {
+	t.Helper()
+	if exists {
+		t.Errorf("Expected the key not to exist, but it does.")
+	}
+}
+
 func assertSlicesEqualIgnoreOrder(t *testing.T, expected, actual []interface{}, message string) {
 	t.Helper()
 
@@ -489,4 +505,81 @@ func TestSet_SUnionStore(t *testing.T) {
 		assertCountEqual(t, count, 7)
 	})
 
+}
+
+func TestSet_SDiff(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Difference of Two Non-Existent Sets", func(t *testing.T) {
+		// Test the set difference operation between two non-existent sets.
+		// It verifies that an empty slice is returned for both sets that don't exist.
+		result := set.SDiff("nonexistent_set1", "nonexistent_set2")
+		assertEmptySlice(t, result)
+	})
+
+	t.Run("Difference with Non-Existent Set and an Empty Set", func(t *testing.T) {
+		// Test the set difference operation with a non-existent set and an empty set.
+		// It ensures that the result set is empty, and no set is created when one of the input sets doesn't exist.
+		set.SAdd("empty_set")
+		result := set.SDiff("nonexistent_set", "empty_set")
+		assertEmptySlice(t, result)
+	})
+
+	t.Run("Difference with Empty Set", func(t *testing.T) {
+		// Test the set difference operation with an empty set.
+		// It verifies that the result set is also an empty set, and the empty set is ignored.
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("empty_set")
+		result := set.SDiff("set1", "empty_set")
+		assertSlicesEqualIgnoreOrder(t, []interface{}{"a", "b", "c"}, result, "Difference with Empty Set")
+	})
+
+	t.Run("Set Difference of Non-Empty Sets", func(t *testing.T) {
+		// Test the set difference operation between two non-empty sets.
+		// It ensures that the result set contains the correct elements.
+		set.SAdd("set1", "a", "b", "c", "d")
+		set.SAdd("set2", "c", "d", "e")
+		result := set.SDiff("set1", "set2")
+		assertSlicesEqualIgnoreOrder(t, []interface{}{"a", "b"}, result, "Set Difference of Non-Empty Sets")
+	})
+}
+
+func TestSet_SDiffStore(t *testing.T) {
+	set := jellyset.New()
+
+	t.Run("Difference Store with Two Non-Existent Sets", func(t *testing.T) {
+		// Test the difference store operation between two non-existent sets.
+		// It verifies that the result set is also non-existent.
+		count := set.SDiffStore("result", "nonexistent_set1", "nonexistent_set2")
+		assertKeyDoesNotExist(t, set.SKeyExists("result"))
+		assertCountEqual(t, count, 0)
+	})
+
+	t.Run("Difference Store with Non-Existent Set and an Empty Set", func(t *testing.T) {
+		// Test the difference store operation with a non-existent set and an empty set.
+		// It ensures that the result set is empty, and no set is created when one of the input sets doesn't exist.
+		set.SAdd("empty_set")
+		count := set.SDiffStore("result", "nonexistent_set", "empty_set")
+		assertKeyDoesNotExist(t, set.SKeyExists("result"))
+		assertCountEqual(t, count, 0)
+	})
+
+	t.Run("Difference Store with Empty Set", func(t *testing.T) {
+		// Test the difference store operation with an empty set.
+		// It verifies that the result set is also an empty set, and the empty set is ignored.
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("empty_set")
+		count := set.SDiffStore("result", "set1", "empty_set")
+		assertSetSize(t, set, "result", 3)
+		assertCountEqual(t, count, 3)
+	})
+
+	t.Run("Difference Store of Non-Empty Sets", func(t *testing.T) {
+		// Test the difference store operation between two non-empty sets.
+		// It ensures that the result set contains the correct elements.
+		set.SAdd("set1", "a", "b", "c", "d")
+		set.SAdd("set2", "c", "d", "e")
+		count := set.SDiffStore("result", "set1", "set2")
+		assertCountEqual(t, count, 2)
+	})
 }
