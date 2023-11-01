@@ -1,9 +1,7 @@
-package jellyset_test
+package jellyset
 
 import (
 	"testing"
-
-	"github.com/davidandw190/jellyset"
 )
 
 // Helper function to assert that a slice is empty.
@@ -30,7 +28,7 @@ func assertSlicesEqual(t *testing.T, slice1, slice2 []interface{}) {
 }
 
 // Helper function to assert that a set has the expected size.
-func assertSetSize(t *testing.T, s *jellyset.Set, key string, expectedSize int) {
+func assertSetSize(t *testing.T, s *Set, key string, expectedSize int) {
 	t.Helper()
 	if size := s.SCard(key); size != expectedSize {
 		t.Errorf("Expected the size of set %s to be %d, but got %d", key, expectedSize, size)
@@ -61,7 +59,7 @@ func assertKeyDoesNotExist(t *testing.T, exists bool) {
 	}
 }
 
-func assertSlicesEqualIgnoreOrder(t *testing.T, expected, actual []interface{}, message string) {
+func assertSlicesEqualIgnoreOrder(t *testing.T, actual, expected []interface{}, message string) {
 	t.Helper()
 
 	if len(expected) != len(actual) {
@@ -89,7 +87,7 @@ func assertSlicesEqualIgnoreOrder(t *testing.T, expected, actual []interface{}, 
 }
 
 func TestSet_SAdd(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Add to New Set", func(t *testing.T) {
 		// Test adding elements to a new set.
@@ -120,7 +118,7 @@ func TestSet_SAdd(t *testing.T) {
 }
 
 func TestSet_SPop(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Pop from Existing Set", func(t *testing.T) {
 		// Test popping elements from an existing set.
@@ -165,7 +163,7 @@ func TestSet_SPop(t *testing.T) {
 }
 
 func TestSet_SRem(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Remove Member", func(t *testing.T) {
 		// Test removing a member from a set.
@@ -198,7 +196,7 @@ func TestSet_SRem(t *testing.T) {
 }
 
 func TestSet_SRandMember(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Retrieve from Existing Set", func(t *testing.T) {
 		// Test retrieving random members from an existing set.
@@ -232,7 +230,7 @@ func TestSet_SRandMember(t *testing.T) {
 }
 
 func Test_SMove(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Move Member", func(t *testing.T) {
 		// Test moving a member from a source set to a destination set.
@@ -278,7 +276,7 @@ func Test_SMove(t *testing.T) {
 	})
 }
 func TestSet_SCard(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Count Non-Existent Set", func(t *testing.T) {
 		// Test counting elements in a non-existent set.
@@ -335,7 +333,7 @@ func TestSet_SCard(t *testing.T) {
 }
 
 func TestSet_SMembers(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Retrieve Members of Non-Existent Set", func(t *testing.T) {
 		// Test retrieving members from a non-existent set.
@@ -398,7 +396,7 @@ func TestSet_SMembers(t *testing.T) {
 }
 
 func TestSet_SUnion(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Union of Two Non-Existent Sets", func(t *testing.T) {
 		// Test the union of two non-existent sets.
@@ -434,7 +432,7 @@ func TestSet_SUnion(t *testing.T) {
 		result := set.SUnion("set1", "set2", "set3")
 		expectedResult := []interface{}{"a", "b", "c", "d", "e", "f", "g"}
 
-		assertSlicesEqualIgnoreOrder(t, expectedResult, result, "Union of Non-Empty Sets")
+		assertSlicesEqualIgnoreOrder(t, result, expectedResult, "Union of Non-Empty Sets")
 	})
 
 	t.Run("Union of Sets with Duplicates", func(t *testing.T) {
@@ -446,13 +444,13 @@ func TestSet_SUnion(t *testing.T) {
 
 		result := set.SUnion("set1", "set2", "set3")
 		expectedResult := []interface{}{"a", "b", "c", "d", "e", "f", "g"}
-		assertSlicesEqualIgnoreOrder(t, expectedResult, result, "Union of Sets with Duplicates")
+		assertSlicesEqualIgnoreOrder(t, result, expectedResult, "Union of Sets with Duplicates")
 	})
 
 }
 
 func TestSet_SUnionStore(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Union Store with Two Non-Existent Sets", func(t *testing.T) {
 		// Test the union store operation with two non-existent sets.
@@ -508,7 +506,7 @@ func TestSet_SUnionStore(t *testing.T) {
 }
 
 func TestSet_SDiff(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Difference of Two Non-Existent Sets", func(t *testing.T) {
 		// Test the set difference operation between two non-existent sets.
@@ -531,7 +529,7 @@ func TestSet_SDiff(t *testing.T) {
 		set.SAdd("set1", "a", "b", "c")
 		set.SAdd("empty_set")
 		result := set.SDiff("set1", "empty_set")
-		assertSlicesEqualIgnoreOrder(t, []interface{}{"a", "b", "c"}, result, "Difference with Empty Set")
+		assertSlicesEqualIgnoreOrder(t, result, []interface{}{"a", "b", "c"}, "Difference with Empty Set")
 	})
 
 	t.Run("Set Difference of Non-Empty Sets", func(t *testing.T) {
@@ -540,12 +538,12 @@ func TestSet_SDiff(t *testing.T) {
 		set.SAdd("set1", "a", "b", "c", "d")
 		set.SAdd("set2", "c", "d", "e")
 		result := set.SDiff("set1", "set2")
-		assertSlicesEqualIgnoreOrder(t, []interface{}{"a", "b"}, result, "Set Difference of Non-Empty Sets")
+		assertSlicesEqualIgnoreOrder(t, result, []interface{}{"a", "b"}, "Set Difference of Non-Empty Sets")
 	})
 }
 
 func TestSet_SDiffStore(t *testing.T) {
-	set := jellyset.New()
+	set := New()
 
 	t.Run("Difference Store with Two Non-Existent Sets", func(t *testing.T) {
 		// Test the difference store operation between two non-existent sets.

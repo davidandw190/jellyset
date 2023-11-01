@@ -340,7 +340,8 @@ func (s *Set) SUnion(keys ...string) []interface{} {
 	return result
 }
 
-// SUnionStore computes the union of multiple sets and stores the result in a new set.
+// SUnionStore computes the union of multiple sets and stores the result in a new set. If the destination
+// set (storeKey) already exists, it will be overridden with the new union results.
 //
 // Parameters:
 //   - storeKey: 	The key associated with the destination set where the result will be stored.
@@ -358,6 +359,10 @@ func (s *Set) SUnion(keys ...string) []interface{} {
 //
 // In this example, the union of "set1" and "set2" is computed and stored in "unionSet," and 'count' contains the number of elements in the resulting union set.
 func (s *Set) SUnionStore(storeKey string, keys ...string) int {
+	if s.exists(storeKey) {
+		delete(s.records, storeKey)
+	}
+
 	union := s.SUnion(keys...)
 	for _, unionKey := range union {
 		s.SAdd(storeKey, unionKey)
@@ -461,7 +466,8 @@ func (s *Set) SDiff(keys ...string) []interface{} {
 }
 
 // SDiffStore computes the set difference between the first key provided and all the other keys.
-// It stores the result in a new set identified by storeKey.
+// It stores the result in a new set identified by storeKey. If the destination
+// set (storeKey) already exists, it will be overridden with the new difference results.
 //
 // Parameters:
 //   - storeKey: 	The key where the resulting set difference will be stored.
@@ -480,6 +486,10 @@ func (s *Set) SDiff(keys ...string) []interface{} {
 // In this example, it calculates the difference between "set1" and "set2" and stores the result in "resultSet."
 // The resulting difference set contains "member1," and 'count' will be 1.
 func (s *Set) SDiffStore(storeKey string, keys ...string) int {
+	if s.exists(storeKey) {
+		delete(s.records, storeKey)
+	}
+
 	difference := s.SDiff(keys...)
 
 	for _, diffKey := range difference {
@@ -564,7 +574,8 @@ func (s *Set) SInter(keys ...string) []interface{} {
 }
 
 // SInterStore computes the intersection of sets specified by the provided keys
-// and stores the result in a new set identified by storeKey.
+// and stores the result in a new set identified by storeKey. If the destination
+// set (storeKey) already exists, it will be overridden with the new intersection results.
 //
 // Parameters:
 //   - storeKey: 	The key where the resulting intersection will be stored.
@@ -583,6 +594,10 @@ func (s *Set) SInter(keys ...string) []interface{} {
 // In this example, it calculates the intersection of "set1" and "set2" and stores the result in "resultSet."
 // The resulting intersection set contains "member2" and "member3," and 'count' will be 2.
 func (s *Set) SInterStore(storeKey string, keys ...string) int {
+	if s.exists(storeKey) {
+		delete(s.records, storeKey)
+	}
+
 	intersection := s.SInter(keys...)
 
 	for _, interKey := range intersection {
@@ -682,7 +697,7 @@ func (s set) list() []interface{} {
 
 // merge merges the current set with another set.
 // It is basically the implementation of the set union between 2 sets.
-func (s set) merge(secondSet set) {
+func (s set) SMerge(secondSet set) {
 	for item := range secondSet {
 		s[item] = keyExists
 	}
