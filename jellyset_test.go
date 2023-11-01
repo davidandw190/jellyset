@@ -581,3 +581,109 @@ func TestSet_SDiffStore(t *testing.T) {
 		assertCountEqual(t, count, 2)
 	})
 }
+
+func TestSet_SInter(t *testing.T) {
+	set := New()
+
+	t.Run("Intersection of Two Non-Existent Sets", func(t *testing.T) {
+		// Test the set intersection operation between two non-existent sets.
+		// It verifies that an empty slice is returned for both sets that don't exist.
+		result := set.SInter("nonexistent_set1", "nonexistent_set2")
+		assertEmptySlice(t, result)
+	})
+
+	t.Run("Intersection with Non-Existent Set and an Empty Set", func(t *testing.T) {
+		// Test the set intersection operation with a non-existent set and an empty set.
+		// It ensures that the result set is empty and no set is created when one of the input sets doesn't exist.
+		set.SAdd("empty_set")
+		result := set.SInter("nonexistent_set", "empty_set")
+		assertEmptySlice(t, result)
+	})
+
+	t.Run("Intersection with Empty Set", func(t *testing.T) {
+		// Test the set intersection operation with an empty set.
+		// It verifies that the result set is also an empty set, and the empty set is ignored.
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("empty_set")
+		result := set.SInter("set1", "empty_set")
+		assertSetSize(t, set, "result", 0)
+		assertEmptySlice(t, result)
+	})
+
+	t.Run("Set Intersection of Non-Empty Sets", func(t *testing.T) {
+		// Test the set intersection operation between two non-empty sets.
+		// It ensures that the result set contains the correct elements.
+		set.SAdd("set1", "a", "b", "c", "d")
+		set.SAdd("set2", "c", "d", "e")
+		result := set.SInter("set1", "set2")
+		assertSlicesEqualIgnoreOrder(t, result, []interface{}{"c", "d"}, "Set Intersection of Non-Empty Sets")
+	})
+
+	t.Run("Intersection with Duplicate Elements", func(t *testing.T) {
+		// Test the set intersection operation when input sets contain duplicate elements.
+		// It verifies that duplicates are handled correctly, and the result set only contains unique elements.
+		set.SAdd("set1", "a", "b", "b", "c", "d")
+		set.SAdd("set2", "c", "d", "d", "e")
+		result := set.SInter("set1", "set2")
+		assertSlicesEqualIgnoreOrder(t, result, []interface{}{"c", "d"}, "Intersection with Duplicate Elements")
+	})
+}
+
+func TestSet_SInterStore(t *testing.T) {
+	set := New()
+
+	t.Run("Intersection Store with Two Non-Existent Sets", func(t *testing.T) {
+		// Test the intersection store operation between two non-existent sets.
+		// It verifies that the result set is also non-existent.
+		count := set.SInterStore("result", "nonexistent_set1", "nonexistent_set2")
+		assertKeyDoesNotExist(t, set.SKeyExists("result"))
+		assertCountEqual(t, count, 0)
+	})
+
+	t.Run("Intersection Store with Non-Existent Set and an Empty Set", func(t *testing.T) {
+		// Test the intersection store operation with a non-existent set and an empty set.
+		// It ensures that the result set is empty and no set is created when one of the input sets doesn't exist.
+		set.SAdd("empty_set")
+		count := set.SInterStore("result", "nonexistent_set", "empty_set")
+		assertKeyDoesNotExist(t, set.SKeyExists("result"))
+		assertCountEqual(t, count, 0)
+	})
+
+	t.Run("Intersection Store with Empty Set", func(t *testing.T) {
+		// Test the intersection store operation with an empty set.
+		// It verifies that the result set is also an empty set, and the empty set is ignored.
+		set.SAdd("set1", "a", "b", "c")
+		set.SAdd("empty_set")
+		count := set.SInterStore("result", "set1", "empty_set")
+		assertCountEqual(t, count, 0)
+	})
+
+	t.Run("Intersection Store of Non-Empty Sets", func(t *testing.T) {
+		// Test the intersection store operation between two non-empty sets.
+		// It ensures that the result set contains the correct elements.
+		set.SAdd("set1", "a", "b", "c", "d")
+		set.SAdd("set2", "c", "d", "e")
+		count := set.SInterStore("result", "set1", "set2")
+		assertCountEqual(t, count, 2)
+	})
+
+	t.Run("Intersection Store of Duplicate Elements", func(t *testing.T) {
+		// Test the intersection store operation when input sets contain duplicate elements.
+		// It verifies that duplicates are handled correctly, and the result set only contains unique elements.
+		set.SAdd("set1", "a", "b", "b", "c", "d")
+		set.SAdd("set2", "c", "d", "d", "e")
+		count := set.SInterStore("result", "set1", "set2")
+		assertCountEqual(t, count, 2)
+	})
+
+	t.Run("Intersection Store with Overwriting Existing Set", func(t *testing.T) {
+		// Test the intersection store operation with an existing result set.
+		// It ensures that the result set is overwritten with the new intersection.
+		set.SAdd("set1", "a", "b", "c", "d")
+		set.SAdd("set2", "c", "d", "e")
+		set.SAdd("result", "existing")
+		count := set.SInterStore("result", "set1", "set2")
+		assertCountEqual(t, count, 2)
+		assertSlicesEqualIgnoreOrder(t, set.SMembers("result"), []interface{}{"c", "d"}, "Intersection Store with Overwriting Existing Set")
+	})
+}
