@@ -127,10 +127,7 @@ func TestSet_SPop(t *testing.T) {
 
 		popped := set.SPop("myset", 3)
 		expected := []interface{}{"member1", "member2", "member3"}
-
-		if len(popped) != len(expected) {
-			t.Errorf("Expected to pop %d, but got %d", len(expected), len(popped))
-		}
+		assertSlicesEqualIgnoreOrder(t, popped, expected, "Pop from Existing Set")
 
 	})
 
@@ -138,7 +135,6 @@ func TestSet_SPop(t *testing.T) {
 		// Test popping elements from a non-existing set.
 		// It checks if an empty slice is returned when popping from a set that doesn't exist.
 		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
-
 		popped := set.SPop("nonexistent", 2)
 		assertEmptySlice(t, popped)
 	})
@@ -147,7 +143,6 @@ func TestSet_SPop(t *testing.T) {
 		// Test popping 0 elements.
 		// It ensures that no elements are popped when requesting 0 elements.
 		set.SAdd("myset", "member1", "member2", "member3", "member4", "member5")
-
 		popped := set.SPop("myset", 0)
 		assertEmptySlice(t, popped)
 	})
@@ -237,10 +232,7 @@ func Test_SMove(t *testing.T) {
 		// It checks if the member is successfully moved from the source set to the destination set.
 		set.SAdd("sourceSet", "member1", "member2")
 		moved := set.SMove("sourceSet", "destSet", "member2")
-
-		if !moved {
-			t.Errorf("Expected to move member2 from sourceSet to destSet, but the operation was not successful")
-		}
+		assertKeyExists(t, moved)
 	})
 
 	t.Run("Move Non-Existent Member", func(t *testing.T) {
@@ -248,20 +240,14 @@ func Test_SMove(t *testing.T) {
 		// It ensures that no movement occurs when the member doesn't exist.
 		set.SAdd("sourceSet", "member1", "member2")
 		moved := set.SMove("sourceSet", "destSet", "nonexistent")
-
-		if moved {
-			t.Errorf("Expected not to move a nonexistent member, but the operation was successful")
-		}
+		assertKeyDoesNotExist(t, moved)
 	})
 
 	t.Run("Move from Non-Existent Source Set", func(t *testing.T) {
 		// Test moving a member from a non-existent source set to a destination set.
 		// It ensures that no movement occurs when the source set doesn't exist.
 		moved := set.SMove("nonexistentSource", "destSet", "member1")
-
-		if moved {
-			t.Errorf("Expected not to move from a nonexistent source set, but the operation was successful")
-		}
+		assertKeyDoesNotExist(t, moved)
 	})
 
 	t.Run("Move to Non-Existent Dest Set", func(t *testing.T) {
@@ -269,10 +255,7 @@ func Test_SMove(t *testing.T) {
 		// It checks that the destination set is created, and the member is moved.
 		set.SAdd("sourceSet", "member1", "member2")
 		moved := set.SMove("sourceSet", "nonexistentDest", "member1")
-
-		if !moved {
-			t.Errorf("Expected to move from sourceSet to a new destination set, but the operation was not successful")
-		}
+		assertKeyExists(t, moved)
 	})
 }
 func TestSet_SCard(t *testing.T) {
@@ -339,9 +322,7 @@ func TestSet_SMembers(t *testing.T) {
 		// Test retrieving members from a non-existent set.
 		// It verifies that an empty slice is returned for a set that doesn't exist.
 		members := set.SMembers("nonexistent_set")
-		if len(members) != 0 {
-			t.Errorf("Expected an empty slice, but got %v", members)
-		}
+		assertEmptySlice(t, members)
 	})
 
 	t.Run("Retrieve Members of Empty Set", func(t *testing.T) {
@@ -349,9 +330,7 @@ func TestSet_SMembers(t *testing.T) {
 		// It ensures that an empty slice is returned for an empty set.
 		set.SAdd("empty_set")
 		members := set.SMembers("empty_set")
-		if len(members) != 0 {
-			t.Errorf("Expected an empty slice, but got %v", members)
-		}
+		assertEmptySlice(t, members)
 	})
 
 	t.Run("Retrieve Members of Set with Elements", func(t *testing.T) {
@@ -361,9 +340,7 @@ func TestSet_SMembers(t *testing.T) {
 		members := set.SMembers("set_with_elements")
 		expectedMembers := []interface{}{"member1", "member2", "member3"}
 
-		if len(members) != len(expectedMembers) {
-			t.Errorf("Expected members in number of %d, but got %d", len(expectedMembers), len(members))
-		}
+		assertSlicesEqualIgnoreOrder(t, members, expectedMembers, "Retrieve Members of Set with Elements")
 	})
 
 	t.Run("Retrieve Members of Multiple Sets", func(t *testing.T) {
